@@ -1,3 +1,8 @@
+# Flask framework
 Flask==3.0.0
-Flask-SocketIO==6.7.0
+
+# SocketIO pour notifications live
+Flask-SocketIO==5.6.0
+
+# Serveur async pour SocketIO
 eventlet==0.33.3
