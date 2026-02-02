@@ -52,13 +52,13 @@ def start_timer(lot):
         lot["winner"] = "Aucun acheteur"
 
 # =====================
-# ROUTES API
+# API
 # =====================
-@app.route('/lots')
+@app.route("/lots")
 def get_lots():
     return jsonify(lots)
 
-@app.route('/start/<lot_id>', methods=['POST'])
+@app.route("/start/<lot_id>", methods=["POST"])
 def start_lot(lot_id):
     for lot in lots:
         if lot["id"] == lot_id:
@@ -71,11 +71,11 @@ def start_lot(lot_id):
             return jsonify({"status": "started"})
     return jsonify({"error": "Lot not found"}), 404
 
-@app.route('/buy/<lot_id>', methods=['POST'])
+@app.route("/buy/<lot_id>", methods=["POST"])
 def buy_lot(lot_id):
     data = request.json
     buyer = data.get("buyer")
-    method = data.get("method")  # wave / orange
+    method = data.get("method")
 
     for lot in lots:
         if lot["id"] == lot_id and lot["active"]:
@@ -98,35 +98,104 @@ def buy_lot(lot_id):
     return jsonify({"error": "Lot inactive"}), 400
 
 # =====================
-# FRONTEND (HTML INLINE)
+# FRONTEND (HTML SÛR)
 # =====================
-@app.route('/')
-def index():
-    return render_template_string("""
+HTML_PAGE = """
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <title>Marché au Cadran Live</title>
-<meta name="viewport" content="width=device-width">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body { font-family: Arial; background:#f4f6f8; }
-.auction { background:white; padding:20px; margin:15px auto;
-           max-width:420px; border-radius:15px;
-           box-shadow:0 10px 20px rgba(0,0,0,.1); }
-.price { font-size:2.8em; color:#e63946; font-weight:bold; }
-button { padding:12px 18px; border:none; border-radius:8px;
-         font-size:1em; margin:5px; cursor:pointer; }
+body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; padding:10px; }
+h1 { text-align:center; }
+.auction {
+  background:#fff; padding:18px; margin:15px auto; max-width:420px;
+  border-radius:15px; box-shadow:0 8px 20px rgba(0,0,0,.1);
+}
+.price { font-size:2.6em; color:#e63946; font-weight:bold; }
+.timer { color:#f77f00; }
+button {
+  padding:12px 18px; margin:6px 4px;
+  border:none; border-radius:8px; font-size:1em; cursor:pointer;
+}
 .start { background:#2a9d8f; color:white; }
 .wave { background:#1da1f2; color:white; }
 .orange { background:#f77f00; color:white; }
+.sold { color:green; font-weight:bold; }
 </style>
 </head>
+
 <body>
 
-<h1 style="text-align:center;">🔴 Marché au Cadran LIVE</h1>
-<div id="lots"></div>
+<h1>🔴 Marché au Cadran LIVE</h1>
+<div id="lots">Chargement…</div>
 
 <script>
-function refresh(){
- fetch('/lots').then(r=>r.json())
+function refreshLots(){
+  fetch('/lots')
+    .then(r => r.json())
+    .then(data => {
+      let html = '';
+      data.forEach(lot => {
+        html += `
+        <div class="auction">
+          <h3>${lot.product}</h3>
+          <p>Quantité : <strong>${lot.quantity}</strong></p>
+          <div class="price">${lot.current_price} FCFA/kg</div>
+          <div class="timer">⏱ ${lot.time_left} sec</div>
+
+          ${
+            lot.winner
+            ? `<div class="sold">🔨 VENDU à ${lot.winner}<br>
+               ${lot.payment ? 'Réf : ' + lot.payment.reference : ''}</div>`
+            : `<button class="start" onclick="startLot('${lot.id}')">🚀 Démarrer</button><br>
+               <button class="wave" onclick="buyLot('${lot.id}','wave')">💙 Wave</button>
+               <button class="orange" onclick="buyLot('${lot.id}','orange')">🟠 Orange</button>`
+          }
+        </div>`;
+      });
+      document.getElementById("lots").innerHTML = html;
+    });
+}
+
+setInterval(refreshLots, 1000);
+refreshLots();
+
+function startLot(id){
+  fetch('/start/' + id, {method:'POST'});
+}
+
+function buyLot(id, method){
+  fetch('/buy/' + id, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({buyer:'Acheteur Live', method:method})
+  })
+  .then(r => r.json())
+  .then(d => {
+    alert(
+      "PAIEMENT À EFFECTUER\\n" +
+      "Méthode : " + d.method.toUpperCase() + "\\n" +
+      "Montant : " + d.amount + " FCFA/kg\\n" +
+      "Référence : " + d.reference
+    );
+  });
+}
+</script>
+
+</body>
+</html>
+"""
+
+@app.route("/")
+def index():
+    return render_template_string(HTML_PAGE)
+
+# =====================
+# RUN
+# =====================
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
