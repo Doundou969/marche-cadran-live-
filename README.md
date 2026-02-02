@@ -1,15 +1,14 @@
-# 🛒 Marché au Cadran Live – Sénégal
+# Marché au Cadran Live - TikTok/IG Style
 
-MVP de marché au cadran dégressif en live (TikTok / Instagram style)
-pour produits agricoles (arachide, oignon, mangue…).
+Prototype Phase D+ : Multi-lots live avec notifications instantanées et paiement mobile simulé.
 
-## 🚀 Fonctionnalités
-- Enchère dégressive temps réel
-- Premier clic = vente
-- Interface mobile friendly
-- Flask + HTML/JS
+## Dépendances
+- Python 3.10+
+- Flask 3
+- Flask-SocketIO 5.6.0
+- Eventlet 0.33.3
 
-## ▶️ Lancer en local
-```bash
-pip install -r requirements.txt
-python app.py
+## Installation locale
+1. Crée un environnement virtuel :
+   ```bash
+   python -m venv venv
