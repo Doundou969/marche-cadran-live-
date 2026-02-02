@@ -1,64 +1,79 @@
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
+import threading
+import time
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "secret123"
-
-# ✅ MODE COMPATIBLE PYTHON 3.13 (PAS EVENTLET)
+app.config["SECRET_KEY"] = "secret"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# 🔹 Données en mémoire (MVP)
-lots = [
-    {"id": 1, "nom": "Arachide Grade A", "prix": 500},
-    {"id": 2, "nom": "Mil Local", "prix": 300},
-    {"id": 3, "nom": "Maïs Séché", "prix": 250},
-]
+# ===== ÉTAT GLOBAL =====
+auction = {
+    "active": False,
+    "product": "Arachide 1er qualité - Diourbel",
+    "quantity": "500 kg",
+    "start_price": 350,
+    "current_price": 350,
+    "min_price": 250,
+    "time_left": 300,
+    "bids": [],
+    "winner": None
+}
 
+# ===== TIMER =====
+def auction_timer():
+    while auction["active"] and auction["time_left"] > 0:
+        time.sleep(1)
+        auction["time_left"] -= 1
+        if auction["current_price"] > auction["min_price"]:
+            auction["current_price"] -= 1
+
+        socketio.emit("update", auction)
+
+    auction["active"] = False
+    auction["winner"] = auction["bids"][0] if auction["bids"] else "Aucun acheteur"
+    socketio.emit("update", auction)
+
+# ===== ROUTE =====
 @app.route("/")
 def index():
     return render_template_string("""
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Marché au Cadran Live</title>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <style>
-        body { font-family: Arial; background: #f7f7f7; padding: 20px; }
-        .lot { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
-        button { padding: 6px 10px; }
-    </style>
+<meta charset="utf-8">
+<title>Marché Cadran Live</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+body { font-family: Arial; background:#f4f6f8; text-align:center }
+.card { background:white; padding:20px; max-width:420px; margin:auto; border-radius:12px }
+.price { font-size:48px; color:red }
+</style>
 </head>
 <body>
 
-<h1>📡 Marché au Cadran Live</h1>
+<h2>🛒 Marché Cadran Live</h2>
 
-<div id="lots"></div>
+<div class="card">
+  <h3 id="product"></h3>
+  <p id="quantity"></p>
+  <div class="price" id="price"></div>
+  <p>⏱️ <span id="time"></span> sec</p>
+  <button onclick="bid()">💰 Enchérir</button>
+</div>
 
 <script>
 const socket = io();
 
-const lotsDiv = document.getElementById("lots");
-
-socket.on("connect", () => {
-    console.log("🟢 Connecté au serveur");
+socket.on("update", data => {
+  document.getElementById("product").innerText = data.product;
+  document.getElementById("quantity").innerText = data.quantity;
+  document.getElementById("price").innerText = data.current_price + " FCFA/kg";
+  document.getElementById("time").innerText = data.time_left;
 });
 
-socket.on("update_lots", (data) => {
-    lotsDiv.innerHTML = "";
-    data.forEach(lot => {
-        lotsDiv.innerHTML += `
-            <div class="lot">
-                <strong>${lot.nom}</strong><br>
-                💰 Prix : <span>${lot.prix}</span> FCFA<br>
-                <button onclick="enchere(${lot.id})">Acheter</button>
-            </div>
-        `;
-    });
-});
-
-function enchere(id) {
-    socket.emit("new_bid", { lot_id: id });
+function bid(){
+  socket.emit("bid", "Acheteur " + Math.floor(Math.random()*100));
 }
 </script>
 
@@ -66,17 +81,33 @@ function enchere(id) {
 </html>
 """)
 
+# ===== SOCKET EVENTS =====
 @socketio.on("connect")
-def handle_connect():
-    emit("update_lots", lots)
+def connect():
+    emit("update", auction)
 
-@socketio.on("new_bid")
-def handle_new_bid(data):
-    lot_id = data.get("lot_id")
-    for lot in lots:
-        if lot["id"] == lot_id:
-            lot["prix"] += 25
-    socketio.emit("update_lots", lots)
+@socketio.on("bid")
+def handle_bid(name):
+    if auction["active"]:
+        auction["bids"].append(name)
+        auction["winner"] = name
+        socketio.emit("update", auction)
 
+@socketio.on("start")
+def start():
+    if not auction["active"]:
+        auction["active"] = True
+        auction["current_price"] = auction["start_price"]
+        auction["time_left"] = 300
+        auction["bids"] = []
+        auction["winner"] = None
+        threading.Thread(target=auction_timer, daemon=True).start()
+
+# ===== RUN (CORRECTION CRITIQUE) =====
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000)
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=5000,
+        allow_unsafe_werkzeug=True
+    )
