@@ -1,1 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Marché au Cadran Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 10px;
+}
+
+h1 {
+  text-align: center;
+  color: #222;
+}
+
+.auction {
+  background: #ffffff;
+  padding: 18px;
+  margin: 15px auto;
+  max-width: 420px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.price {
+  font-size: 2.8em;
+  font-weight: bold;
+  color: #e63946;
+  margin: 10px 0;
+}
+
+.timer {
+  font-size: 1.2em;
+  color: #f77f00;
+}
+
+button {
+  padding: 12px 18px;
+  font-size: 1em;
+  border: none;
+  border-radius: 8px;
+  margin: 6px 4px;
+  cursor: pointer;
+}
+
+.start {
+  background: #2a9d8f;
+  color: white;
+}
+
+.wave {
+  background: #1da1f2;
+  color: white;
+}
+
+.orange {
+  background: #f77f00;
+  color: white;
+}
+
+.sold {
+  color: green;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔴 Marché au Cadran LIVE</h1>
+
+<div id="lots">Chargement des lots...</div>
+
+<script>
+function refreshLots(){
+  fetch('/lots')
+    .then(res => res.json())
+    .then(data => {
+      let html = "";
+
+      data.forEach(lot => {
+        html += `
+        <div class="auction">
+          <h3>${lot.product}</h3>
+          <p><strong>Quantité :</strong> ${lot.quantity}</p>
+
+          <div class="price">${lot.current_price} FCFA/kg</div>
+          <div class="timer">⏱ ${lot.time_left} sec</div>
+
+          ${
+            lot.winner
+            ? `<div class="sold">
+                 🔨 VENDU à ${lot.winner}<br>
+                 ${lot.payment ? "Réf : " + lot.payment.reference : ""}
+               </div>`
+            : `
+              <button class="start" onclick="startLot('${lot.id}')">
+                🚀 Démarrer
+              </button><br>
+
+              <button class="wave" onclick="buyLot('${lot.id}','wave')">
+                💙 Payer Wave
+              </button>
+
+              <button class="orange" onclick="buyLot('${lot.id}','orange')">
+                🟠 Payer Orange
+              </button>
+            `
+          }
+        </div>
+        `;
+      });
+
+      document.getElementById("lots").innerHTML = html;
+    });
+}
+
+setInterval(refreshLots, 1000);
+refreshLots();
+
+function startLot(id){
+  fetch('/start/' + id, { method: 'POST' });
+}
+
+function buyLot(id, method){
+  fetch('/buy/' + id, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      buyer: 'Acheteur Live',
+      method: method
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(
+      "💳 PAIEMENT À EFFECTUER\n\n" +
+      "Méthode : " + data.method.toUpperCase() + "\n" +
+      "Montant : " + data.amount + " FCFA/kg\n" +
+      "Référence : " + data.reference + "\n\n" +
+      "Effectuez le paiement et envoyez la référence."
+    );
+  });
+}
+</script>
+
+</body>
+</html>
 
