@@ -1,37 +1,57 @@
-from flask import Flask, render_template_string
-from flask_socketio import SocketIO, emit
+from flask import Flask, jsonify, request, render_template_string
 import threading
 import time
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "secret-key"
 
-# ⚠️ PAS de async_mode forcé
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-auction = {
-    "active": False,
-    "product": "Arachide grade A – Kaolack",
-    "quantity": "500 kg",
-    "start_price": 350,
-    "current_price": 350,
-    "min_price": 250,
-    "time_left": 120,
-    "bids": [],
-    "winner": None
+# =========================
+# DONNÉES MULTI-LOTS
+# =========================
+lots = {
+    "lot1": {
+        "product": "Arachide Grade A – Diourbel",
+        "quantity": "500 kg",
+        "start_price": 350,
+        "current_price": 350,
+        "min_price": 250,
+        "time_left": 180,
+        "active": False,
+        "winner": None,
+        "bids": []
+    },
+    "lot2": {
+        "product": "Mil local – Kaolack",
+        "quantity": "1 tonne",
+        "start_price": 220,
+        "current_price": 220,
+        "min_price": 160,
+        "time_left": 200,
+        "active": False,
+        "winner": None,
+        "bids": []
+    }
 }
 
-def auction_timer():
-    while auction["active"] and auction["time_left"] > 0:
+# =========================
+# TIMER DÉGRESSIF
+# =========================
+def auction_timer(lot_id):
+    while lots[lot_id]["active"] and lots[lot_id]["time_left"] > 0:
         time.sleep(1)
-        auction["time_left"] -= 1
-        if auction["current_price"] > auction["min_price"]:
-            auction["current_price"] -= 1
-        socketio.emit("update", auction)
+        lots[lot_id]["current_price"] -= 1
+        lots[lot_id]["time_left"] -= 1
 
-    auction["active"] = False
-    socketio.emit("update", auction)
+        if lots[lot_id]["current_price"] <= lots[lot_id]["min_price"]:
+            break
 
+    lots[lot_id]["active"] = False
+    lots[lot_id]["winner"] = (
+        lots[lot_id]["bids"][-1] if lots[lot_id]["bids"] else "Aucun acheteur"
+    )
+
+# =========================
+# FRONT LIVE (MULTI-LOTS)
+# =========================
 @app.route("/")
 def index():
     return render_template_string("""
@@ -39,70 +59,80 @@ def index():
 <html>
 <head>
 <meta charset="utf-8">
-<title>Marché au Cadran Live</title>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<title>Marché Cadran Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body { font-family: Arial; background:#f5f6fa; text-align:center }
-.card { background:#fff; padding:20px; max-width:420px; margin:auto; border-radius:12px }
-.price { font-size:46px; color:#e74c3c }
-button { padding:12px 20px; font-size:16px }
+body{font-family:Arial;background:#f5f5f5}
+.card{background:white;padding:20px;margin:15px;border-radius:12px}
+.price{font-size:2.5em;color:red}
+button{padding:12px 20px;font-size:1em}
 </style>
 </head>
 <body>
-
-<h2>🛒 Marché au Cadran – Live</h2>
-
-<div class="card">
-  <h3 id="product"></h3>
-  <p id="quantity"></p>
-  <div class="price" id="price"></div>
-  <p>⏱️ <span id="time"></span> secondes</p>
-  <button onclick="bid()">💰 Enchérir</button>
-</div>
+<h1>🛒 Marché au Cadran Live</h1>
+<div id="lots"></div>
 
 <script>
-const socket = io();
-
-socket.on("update", data => {
-  document.getElementById("product").innerText = data.product;
-  document.getElementById("quantity").innerText = data.quantity;
-  document.getElementById("price").innerText = data.current_price + " FCFA/kg";
-  document.getElementById("time").innerText = data.time_left;
-});
-
-function bid(){
-  socket.emit("bid", "Acheteur-" + Math.floor(Math.random()*1000));
+function loadLots(){
+ fetch("/api/lots")
+ .then(r=>r.json())
+ .then(data=>{
+   let html="";
+   for(let id in data){
+     let l=data[id];
+     html+=`
+     <div class="card">
+       <h2>${l.product}</h2>
+       <p>Quantité: ${l.quantity}</p>
+       <div class="price">${l.current_price} FCFA/kg</div>
+       <p>⏱ ${l.time_left}s</p>
+       <p>👤 Enchères: ${l.bids.length}</p>
+       <button onclick="bid('${id}')">💰 Enchérir</button>
+       ${l.winner ? "<p>🏆 Vainqueur: "+l.winner+"</p>" : ""}
+     </div>`;
+   }
+   document.getElementById("lots").innerHTML=html;
+ })
 }
+function bid(id){
+ fetch("/api/bid/"+id,{method:"POST"})
+}
+setInterval(loadLots,1000);
+loadLots();
 </script>
-
 </body>
 </html>
 """)
 
-@socketio.on("connect")
-def connect():
-    emit("update", auction)
+# =========================
+# API
+# =========================
+@app.route("/api/lots")
+def get_lots():
+    return jsonify(lots)
 
-@socketio.on("bid")
-def bid(name):
-    if auction["active"]:
-        auction["bids"].append(name)
-        auction["winner"] = name
-        socketio.emit("update", auction)
+@app.route("/api/start/<lot_id>", methods=["POST"])
+def start_lot(lot_id):
+    if lot_id in lots:
+        lots[lot_id]["active"] = True
+        lots[lot_id]["current_price"] = lots[lot_id]["start_price"]
+        lots[lot_id]["time_left"] = 180
+        lots[lot_id]["bids"] = []
+        lots[lot_id]["winner"] = None
+        threading.Thread(target=auction_timer, args=(lot_id,), daemon=True).start()
+        return jsonify({"status": "started"})
+    return jsonify({"error": "lot not found"}), 404
 
-@socketio.on("start")
-def start():
-    if not auction["active"]:
-        auction["active"] = True
-        auction["current_price"] = auction["start_price"]
-        auction["time_left"] = 120
-        auction["bids"] = []
-        threading.Thread(target=auction_timer, daemon=True).start()
+@app.route("/api/bid/<lot_id>", methods=["POST"])
+def bid(lot_id):
+    if lot_id in lots and lots[lot_id]["active"]:
+        bidder = request.remote_addr
+        lots[lot_id]["bids"].append(bidder)
+        return jsonify({"status": "ok"})
+    return jsonify({"error": "inactive"}), 400
 
+# =========================
+# MAIN
+# =========================
 if __name__ == "__main__":
-    socketio.run(
-        app,
-        host="0.0.0.0",
-        port=5000,
-        allow_unsafe_werkzeug=True
-    )
+    app.run(host="0.0.0.0", port=10000)
