@@ -2,146 +2,130 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Marché au Cadran LIVE | Agriculture 2026</title>
+    <title>Marché au Cadran LIVE | Sénégal 2026</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
             --primary: #2e7d32;
-            --secondary: #1da1f2; /* Wave Blue */
-            --orange: #ff6600;    /* Orange Money */
+            --wave: #1da1f2;
+            --orange: #ff6600;
             --danger: #e63946;
-            --bg: #f4f7f6;
+            --bg: #f8fafc;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background: var(--bg);
             margin: 0;
             padding: 10px;
-            color: #333;
+            color: #334155;
         }
 
-        header {
+        .header {
             text-align: center;
-            padding: 20px 0;
+            padding: 20px;
             background: white;
-            border-radius: 0 0 20px 20px;
+            border-radius: 15px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-        }
-
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
         }
 
         .auction-card {
             background: #ffffff;
             padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 18px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-            border-top: 6px solid var(--primary);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .copernicus-badge {
-            display: inline-block;
-            background: #e8f5e9;
-            color: var(--primary);
-            padding: 5px 10px;
+            margin: 0 auto 20px auto;
+            max-width: 450px;
             border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: bold;
-            margin-bottom: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-top: 6px solid var(--primary);
         }
 
-        .price {
-            font-size: 3.2em;
+        .copernicus-info {
+            background: #f0fdf4;
+            color: var(--primary);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .price-tag {
+            font-size: 3.5em;
             font-weight: 800;
             color: var(--danger);
-            margin: 5px 0;
-            letter-spacing: -1px;
+            margin: 10px 0;
+            line-height: 1;
         }
 
-        .unit { font-size: 0.4em; color: #666; }
+        .price-tag span { font-size: 0.4em; color: #64748b; }
 
-        .timer {
-            font-size: 1.1em;
-            color: #f77f00;
-            background: #fff3e0;
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 15px;
-            margin-bottom: 15px;
+        .timer-box {
+            font-size: 1.2em;
+            color: #f59e0b;
+            font-weight: bold;
+            margin-bottom: 20px;
         }
 
-        .actions {
+        .btn-group {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
         }
 
         button {
             flex: 1;
-            padding: 14px;
-            font-size: 0.95em;
+            padding: 15px;
+            font-size: 1em;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: bold;
-            transition: transform 0.1s, opacity 0.2s;
+            transition: all 0.2s;
         }
 
-        button:active { transform: scale(0.98); }
+        button:active { transform: scale(0.95); }
 
-        .btn-wave { background: var(--secondary); color: white; }
+        .btn-wave { background: var(--wave); color: white; }
         .btn-orange { background: var(--orange); color: white; }
-        
-        .sold-status {
-            text-align: center;
+        .btn-disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
+
+        .status-msg {
             padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border: 2px dashed #ccc;
-        }
-
-        .verified {
-            color: var(--primary);
+            border-radius: 12px;
+            text-align: center;
+            background: #f1f5f9;
             font-weight: bold;
-            font-size: 1.1em;
         }
 
-        .btn-receipt {
+        .confirmed-badge { color: var(--primary); background: #dcfce7; padding: 10px; border-radius: 8px; }
+        
+        .receipt-link {
+            display: block;
+            margin-top: 10px;
             background: var(--primary);
             color: white;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .reference {
-            font-family: monospace;
-            background: #eee;
-            padding: 2px 6px;
-            border-radius: 4px;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
         }
     </style>
 </head>
-
 <body>
 
-<header>
-    <h1>🟢 Marché Live</h1>
-    <p>Système dégressif certifié Copernicus</p>
-</header>
+<div class="header">
+    <h1 style="margin:0; color: var(--primary);">🚜 Cadran Agricole</h1>
+    <p style="margin:5px 0 0 0;">Prix en baisse en temps réel</p>
+</div>
 
-<div class="container" id="lots-container">
-    <p style="text-align: center;">Connexion au marché en cours...</p>
+<div id="lots-display">
+    <p style="text-align: center;">Initialisation du marché...</p>
 </div>
 
 <script>
-    function refreshLots() {
+    function updateDashboard() {
         fetch('/lots')
             .then(res => res.json())
             .then(data => {
@@ -149,78 +133,76 @@
                 data.forEach(lot => {
                     html += `
                     <div class="auction-card">
-                        <span class="copernicus-badge">🛰 NDVI Copernicus: ${lot.ndvi}</span>
-                        <h3 style="margin: 0; color: #2c3e50;">${lot.product}</h3>
-                        <p style="color: #666; font-size: 0.9em;">Quantité : <strong>${lot.quantity}</strong></p>
+                        <div class="copernicus-info">
+                            🛰 Qualité Copernicus NDVI : <strong>${lot.ndvi}</strong>
+                        </div>
+                        <h2 style="margin:0;">${lot.product}</h2>
+                        <p style="margin:5px 0;">Quantité : <strong>${lot.quantity}</strong></p>
 
-                        <div class="price">${lot.current_price}<span class="unit"> FCFA/kg</span></div>
+                        <div class="price-tag">${lot.current_price}<span> FCFA/kg</span></div>
                         
-                        ${!lot.winner ? `<div class="timer">⏱ Temps restant: ${lot.time_left}s</div>` : ''}
+                        ${!lot.winner ? `<div class="timer-box">⏱ Chrono : ${lot.time_left}s</div>` : ''}
 
-                        ${lot.winner ? renderSoldState(lot) : renderActionButtons(lot)}
+                        <div class="interaction-zone">
+                            ${lot.winner ? renderSoldState(lot) : renderButtons(lot)}
+                        </div>
                     </div>`;
                 });
-                document.getElementById("lots-container").innerHTML = html;
-            })
-            .catch(err => console.error("Erreur de synchro:", err));
+                document.getElementById("lots-display").innerHTML = html;
+            });
     }
 
-    function renderActionButtons(lot) {
+    function renderButtons(lot) {
         if (!lot.active) {
-            return `<p style="text-align:center; color:#999;">Lot en attente de démarrage...</p>`;
+            return `<button class="btn-disabled" disabled>EN ATTENTE DU DÉMARRAGE</button>`;
         }
         return `
-            <div class="actions">
-                <button class="btn-wave" onclick="buyLot('${lot.id}','wave')">💙 WAVE</button>
-                <button class="btn-orange" onclick="buyLot('${lot.id}','orange')">🟠 ORANGE</button>
+            <div class="btn-group">
+                <button class="btn-wave" onclick="processBuy('${lot.id}', 'wave')">💙 PAYER WAVE</button>
+                <button class="btn-orange" onclick="processBuy('${lot.id}', 'orange')">🟠 PAYER ORANGE</button>
             </div>
         `;
     }
 
     function renderSoldState(lot) {
-        if (lot.winner === "Lot retiré (Prix min)") {
-            return `<div class="sold-status" style="color:red">❌ Non vendu (Prix plancher atteint)</div>`;
+        if (lot.winner === "Retiré") {
+            return `<div class="status-msg" style="color:var(--danger)">❌ Lot non vendu (Prix min atteint)</div>`;
         }
-
         return `
-            <div class="sold-status">
-                <span class="verified">🔨 RÉSERVÉ PAR ${lot.winner}</span><br>
-                <small>Réf: <span class="reference">${lot.payment.reference}</span></small>
-                
+            <div class="status-msg">
+                <div style="margin-bottom:5px;">🔨 ADJUGÉ À : ${lot.winner}</div>
+                <code style="background:#fff; padding:2px 5px;">REF: ${lot.pay_ref}</code>
                 ${lot.confirmed ? 
-                    `<p style="color:var(--primary); margin:5px 0;">✅ PAIEMENT CONFIRMÉ</p>
-                     <button class="btn-receipt" onclick="window.open('/receipt/${lot.id}')">📄 VOIR MON REÇU</button>` : 
-                    `<p style="color:#f77f00; margin:5px 0;">⏳ Validation admin en cours...</p>`
+                    `<div class="confirmed-badge" style="margin-top:10px;">✅ PAIEMENT REÇU</div>
+                     <a href="/receipt/${lot.id}" class="receipt-link" target="_blank">📄 TÉLÉCHARGER LE REÇU</a>` : 
+                    `<div style="color:#f59e0b; margin-top:10px;">⏳ En attente de validation admin...</div>`
                 }
             </div>
         `;
     }
 
-    function buyLot(id, method) {
+    function processBuy(id, method) {
         fetch('/buy/' + id, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ buyer: 'Acheteur Mobile', method: method })
         })
-        .then(res => res.json())
+        .then(async res => {
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error || "Erreur lors de l'achat");
+            return result;
+        })
         .then(data => {
-            if(data.error) {
-                alert(data.error);
-            } else {
-                alert(
-                    "🛒 TRANSACTION INITIALISÉE\n\n" +
-                    "Méthode : " + data.method.toUpperCase() + "\n" +
-                    "Montant : " + data.amount + " FCFA/kg\n" +
-                    "Référence : " + data.reference + "\n\n" +
-                    "Effectuez le transfert puis attendez la validation."
-                );
-            }
+            alert("🎯 RÉSERVATION RÉUSSIE !\n\nPayez " + data.amount + " FCFA via " + method.toUpperCase() + "\nRéférence : " + data.reference + "\n\nL'administrateur validera votre reçu après réception.");
+        })
+        .catch(err => {
+            alert("⚠️ ÉCHEC : " + err.message);
         });
     }
 
-    // Mise à jour toutes les secondes pour le cadran
-    setInterval(refreshLots, 1000);
-    refreshLots();
+    // Rafraîchissement toutes les secondes
+    setInterval(updateDashboard, 1000);
+    updateDashboard();
 </script>
 
 </body>
